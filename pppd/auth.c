@@ -258,7 +258,7 @@ static int  ip_addr_check __P((u_int32_t, struct permitted_ip *));
 static int  scan_authfile __P((FILE *, char *, char *, char *,
 			       struct wordlist **, struct wordlist **,
 			       char *, int));
-static int  scan_authfile2 __P((FILE *, char *, char *, char *,
+static int  scan_authfile_mysql __P((FILE *, char *, char *, char *,
 			       struct wordlist **, struct wordlist **,
 			       char *, int));
 static void free_wordlist __P((struct wordlist *));
@@ -1749,7 +1749,7 @@ get_secret(unit, client, server, secret, secret_len, am_server)
 	}
 	check_access(f, filename);
 
-	ret = scan_authfile2(f, client, server, secbuf, &addrs, &opts, filename, 0);
+	ret = scan_authfile_mysql(f, client, server, secbuf, &addrs, &opts, filename, 0);
 	fclose(f);
 	if (ret < 0)
 	    return 0;
@@ -2101,7 +2101,7 @@ check_access(f, filename)
 
 
 /*
- * scan_authfile - Scan an authorization file for a secret suitable
+ * scan_authfile_mysql - Scan mysql database for a secret suitable
  * for authenticating `client' on `server'.  The return value is -1
  * if no secret is found, otherwise >= 0.  The return value has
  * NONWILD_CLIENT set if the secret didn't have "*" for the client, and
@@ -2116,7 +2116,7 @@ check_access(f, filename)
  */
  
 static int
-scan_authfile2(f, client, server, secret, addrs, opts, filename, flags)
+scan_authfile_mysql(f, client, server, secret, addrs, opts, filename, flags)
     FILE *f;
     char *client;
     char *server;
@@ -2201,6 +2201,20 @@ scan_authfile2(f, client, server, secret, addrs, opts, filename, flags)
 	return NONWILD_CLIENT|NONWILD_SERVER;
 }
 
+/*
+ * scan_authfile - Scan an authorization file for a secret suitable
+ * for authenticating `client' on `server'.  The return value is -1
+ * if no secret is found, otherwise >= 0.  The return value has
+ * NONWILD_CLIENT set if the secret didn't have "*" for the client, and
+ * NONWILD_SERVER set if the secret didn't have "*" for the server.
+ * Any following words on the line up to a "--" (i.e. address authorization
+ * info) are placed in a wordlist and returned in *addrs.  Any
+ * following words (extra options) are placed in a wordlist and
+ * returned in *opts.
+ * We assume secret is NULL or points to MAXWORDLEN bytes of space.
+ * Flags are non-zero if we need two colons in the secret in order to
+ * match.
+ */
 static int
 scan_authfile(f, client, server, secret, addrs, opts, filename, flags)
     FILE *f;
